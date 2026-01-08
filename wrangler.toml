@@ -1,0 +1,20 @@
+name = "blackroad-operator"
+main = "index.js"
+compatibility_date = "2024-01-01"
+workers_dev = true
+
+[env.production]
+name = "blackroad-operator-production"
+route = "blackroad-operator.blackroad.io/*"
+
+[[kv_namespaces]]
+binding = "AGENT_REGISTRY"
+id = "blackroad_agent_registry"
+
+[[kv_namespaces]]
+binding = "WATERFALL_LOG"
+id = "blackroad_waterfall_log"
+
+[vars]
+VERSION = "1.0.0"
+MAX_AGENTS = "30000"
