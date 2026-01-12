@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  operator:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - SALESFORCE_USERNAME=${SALESFORCE_USERNAME}
+      - SALESFORCE_PASSWORD=${SALESFORCE_PASSWORD}
+      - SALESFORCE_TOKEN=${SALESFORCE_TOKEN}
+      - HAILO_ENDPOINT=http://octavia.local:8080
+      - LUCIDIA_ENDPOINT=http://lucidia.local:8080
+      - REDIS_URL=redis://redis:6379
+      - AUDIT_LOG_PATH=/var/log/blackroad/audit.jsonl
+    volumes:
+      - operator-logs:/var/log/blackroad
+    depends_on:
+      - redis
+    restart: unless-stopped
+    networks:
+      - blackroad-net
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped
+    networks:
+      - blackroad-net
+
+volumes:
+  operator-logs:
+  redis-data:
+
+networks:
+  blackroad-net:
+    driver: bridge

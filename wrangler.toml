@@ -1,0 +1,28 @@
+name = "blackroad-operator"
+main = "worker/index.js"
+compatibility_date = "2024-01-01"
+
+[vars]
+ENVIRONMENT = "production"
+
+# KV Namespaces for caching and state
+[[kv_namespaces]]
+binding = "OPERATOR_CACHE"
+id = "your-kv-namespace-id"
+
+# D1 Database for audit logs
+[[d1_databases]]
+binding = "AUDIT_DB"
+database_name = "blackroad-audit"
+database_id = "your-d1-database-id"
+
+# Environment-specific configuration
+[env.production]
+routes = [
+    { pattern = "api.blackroad.io/operator/*", zone_name = "blackroad.io" }
+]
+
+[env.staging]
+routes = [
+    { pattern = "staging-api.blackroad.io/operator/*", zone_name = "blackroad.io" }
+]
