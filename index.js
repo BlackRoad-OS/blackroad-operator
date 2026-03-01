@@ -6,12 +6,24 @@
  * Routes all @blackroad mentions through waterfall cascade.
  */
 
+// Organization hierarchy
+// Root: BlackRoad-OS-Inc (data layer / parent org)
+// Public-facing: BlackRoad-OS Enterprise
+// Coordinator: BlackRoad-OS (routes to all sub-orgs)
+const ORG_HIERARCHY = {
+  root: 'BlackRoad-OS-Inc',
+  enterprise: 'blackroad-os',
+  coordinator: 'BlackRoad-OS'
+};
+
 // Organization mapping
 const ORGANIZATIONS = {
+  'inc': 'BlackRoad-OS-Inc',
   'os': 'BlackRoad-OS',
   'ai': 'BlackRoad-AI',
   'cloud': 'BlackRoad-Cloud',
   'education': 'BlackRoad-Education',
+  'enterprises': 'Blackbox-Enterprises',
   'foundation': 'BlackRoad-Foundation',
   'gov': 'BlackRoad-Gov',
   'hardware': 'BlackRoad-Hardware',
@@ -175,7 +187,94 @@ export default {
     if (url.pathname === '/health') {
       return new Response(JSON.stringify({
         status: 'operational',
-        version: '1.0.0',
+        version: env.VERSION || '1.0.0',
+        max_agents: parseInt(env.MAX_AGENTS || '30000'),
+        hierarchy: ORG_HIERARCHY,
+        timestamp: new Date().toISOString()
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    // Organization hierarchy endpoint
+    if (url.pathname === '/api/orgs' && request.method === 'GET') {
+      return new Response(JSON.stringify({
+        hierarchy: ORG_HIERARCHY,
+        organizations: ORGANIZATIONS,
+        products: PRODUCTS,
+        total_orgs: Object.keys(ORGANIZATIONS).length,
+        total_products: Object.keys(PRODUCTS).length
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    // Doctor endpoint - system health diagnostics (Issue #5/#19)
+    if (url.pathname === '/api/doctor' && request.method === 'GET') {
+      const checks = [];
+
+      // Check agent registry
+      try {
+        const registry = await env.AGENT_REGISTRY.get('agents', { type: 'json' });
+        const agentCount = registry ? Object.keys(registry).length : 0;
+        const activeAgents = registry
+          ? Object.values(registry).filter(a => a.status === 'active').length
+          : 0;
+        checks.push({
+          name: 'agent_registry',
+          status: 'ok',
+          details: { total: agentCount, active: activeAgents }
+        });
+      } catch (e) {
+        checks.push({
+          name: 'agent_registry',
+          status: 'error',
+          details: { error: e.message }
+        });
+      }
+
+      // Check waterfall log
+      try {
+        const tasks = await env.WATERFALL_LOG.list({ limit: 10 });
+        checks.push({
+          name: 'waterfall_log',
+          status: 'ok',
+          details: { recent_tasks: tasks.keys.length }
+        });
+      } catch (e) {
+        checks.push({
+          name: 'waterfall_log',
+          status: 'error',
+          details: { error: e.message }
+        });
+      }
+
+      // Check org mapping completeness
+      const orgCount = Object.keys(ORGANIZATIONS).length;
+      checks.push({
+        name: 'org_mapping',
+        status: orgCount >= 16 ? 'ok' : 'warn',
+        details: { mapped: orgCount, expected: 16 }
+      });
+
+      // Check product mapping
+      const productCount = Object.keys(PRODUCTS).length;
+      checks.push({
+        name: 'product_mapping',
+        status: productCount >= 11 ? 'ok' : 'warn',
+        details: { mapped: productCount, expected: 11 }
+      });
+
+      const overallStatus = checks.every(c => c.status === 'ok')
+        ? 'healthy'
+        : checks.some(c => c.status === 'error')
+          ? 'unhealthy'
+          : 'degraded';
+
+      return new Response(JSON.stringify({
+        status: overallStatus,
+        version: env.VERSION || '1.0.0',
+        checks,
         timestamp: new Date().toISOString()
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
