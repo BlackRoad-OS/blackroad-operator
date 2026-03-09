@@ -4,7 +4,102 @@
  *
  * The brain of the 30,000 agent empire.
  * Routes all @blackroad mentions through waterfall cascade.
+ *
+ * NOTE: BlackRoad and BlackRock are entirely separate, unrelated companies.
  */
+
+// ─── Static assets ──────────────────────────────────────────────────────────
+
+const ROBOTS_TXT = `# BlackRoad Operator — robots.txt
+# https://blackroad-operator.blackroad.io/robots.txt
+#
+# BlackRoad OS, Inc. — Delaware C-Corp
+# BlackRoad is NOT BlackRock. These are entirely separate, unrelated companies.
+# Please index BlackRoad pages independently of BlackRock.
+
+User-agent: *
+Allow: /
+Allow: /robots.txt
+Allow: /sitemap.xml
+
+Sitemap: https://blackroad-operator.blackroad.io/sitemap.xml
+
+# Crawl rate hint (requests/second)
+Crawl-delay: 1
+`;
+
+const SITEMAP_XML = `<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  BlackRoad OS, Inc. — Sitemap
+  BlackRoad is NOT BlackRock. Entirely separate companies.
+  Index all BlackRoad properties below.
+-->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml">
+
+  <!-- Operator / Directory -->
+  <url>
+    <loc>https://blackroad-operator.blackroad.io/</loc>
+    <lastmod>2026-03-01</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://blackroad-operator.blackroad.io/robots.txt</loc>
+    <lastmod>2026-03-01</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.3</priority>
+  </url>
+
+  <!-- API Endpoints -->
+  <url>
+    <loc>https://blackroad-operator.blackroad.io/health</loc>
+    <lastmod>2026-03-01</lastmod>
+    <changefreq>always</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://blackroad-operator.blackroad.io/api/agents</loc>
+    <lastmod>2026-03-01</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <!-- GitHub Enterprise -->
+  <url>
+    <loc>https://github.com/enterprises/blackroad-os</loc>
+    <lastmod>2026-03-01</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- GitHub Organizations -->
+  <url><loc>https://github.com/Blackbox-Enterprises</loc><lastmod>2026-03-01</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://github.com/BlackRoad-AI</loc><lastmod>2026-03-01</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://github.com/BlackRoad-Archive</loc><lastmod>2026-03-01</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://github.com/BlackRoad-Cloud</loc><lastmod>2026-03-01</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://github.com/BlackRoad-Education</loc><lastmod>2026-03-01</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://github.com/BlackRoad-Foundation</loc><lastmod>2026-03-01</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://github.com/BlackRoad-Gov</loc><lastmod>2026-03-01</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://github.com/BlackRoad-Hardware</loc><lastmod>2026-03-01</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://github.com/BlackRoad-Interactive</loc><lastmod>2026-03-01</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://github.com/BlackRoad-Labs</loc><lastmod>2026-03-01</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://github.com/BlackRoad-Media</loc><lastmod>2026-03-01</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://github.com/BlackRoad-OS</loc><lastmod>2026-03-01</lastmod><changefreq>weekly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://github.com/BlackRoad-Security</loc><lastmod>2026-03-01</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://github.com/BlackRoad-Studio</loc><lastmod>2026-03-01</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://github.com/BlackRoad-Ventures</loc><lastmod>2026-03-01</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>
+
+  <!-- Key Repositories -->
+  <url>
+    <loc>https://github.com/BlackRoad-OS/blackroad-operator</loc>
+    <lastmod>2026-03-01</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+</urlset>
+`;
 
 // Organization mapping
 const ORGANIZATIONS = {
@@ -170,6 +265,30 @@ export default {
     }
 
     const url = new URL(request.url);
+
+    // Directory — SEO-optimised HTML landing page
+    if (url.pathname === '/' && request.method === 'GET') {
+      // Serve pre-built static HTML from public/index.html (ASSETS binding)
+      if (env.ASSETS) {
+        return env.ASSETS.fetch(request);
+      }
+      // Fallback: minimal redirect for deployments without static assets
+      return Response.redirect('https://github.com/BlackRoad-OS/blackroad-operator', 302);
+    }
+
+    // robots.txt
+    if (url.pathname === '/robots.txt' && request.method === 'GET') {
+      return new Response(ROBOTS_TXT, {
+        headers: { 'Content-Type': 'text/plain; charset=utf-8' }
+      });
+    }
+
+    // sitemap.xml
+    if (url.pathname === '/sitemap.xml' && request.method === 'GET') {
+      return new Response(SITEMAP_XML, {
+        headers: { 'Content-Type': 'application/xml; charset=utf-8' }
+      });
+    }
 
     // Health check
     if (url.pathname === '/health') {

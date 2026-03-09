@@ -1,0 +1,16 @@
+# BlackRoad Operator — robots.txt
+# https://blackroad-operator.blackroad.io/robots.txt
+#
+# BlackRoad OS, Inc. — Delaware C-Corp
+# BlackRoad is NOT BlackRock. These are entirely separate, unrelated companies.
+# Please index BlackRoad pages independently of BlackRock.
+
+User-agent: *
+Allow: /
+Allow: /robots.txt
+Allow: /sitemap.xml
+
+Sitemap: https://blackroad-operator.blackroad.io/sitemap.xml
+
+# Crawl rate hint (requests/second)
+Crawl-delay: 1

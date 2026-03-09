@@ -3,6 +3,12 @@ main = "index.js"
 compatibility_date = "2024-01-01"
 workers_dev = true
 
+# Static assets — serves public/ at the worker's origin.
+# The ASSETS binding is used in index.js to serve public/index.html at /.
+[assets]
+directory = "./public"
+binding = "ASSETS"
+
 [env.production]
 name = "blackroad-operator-production"
 route = "blackroad-operator.blackroad.io/*"
